@@ -1,0 +1,46 @@
+{
+  "social": [
+    {
+      "id": "github",
+      "name": "GitHub",
+      "url": "https://github.com/KontangoOSS",
+      "icon": "github"
+    },
+    {
+      "id": "gitea",
+      "name": "Gitea",
+      "url": "https://github.com/KontangoOSS",
+      "icon": "gitea"
+    },
+    {
+      "id": "docs",
+      "name": "Documentation",
+      "url": "https://docs.kontango.io",
+      "icon": "gitbook"
+    },
+    {
+      "id": "linkedin",
+      "name": "LinkedIn",
+      "url": "https://linkedin.com/company/kontango",
+      "icon": "linkedin"
+    },
+    {
+      "id": "facebook",
+      "name": "Facebook",
+      "url": "https://facebook.com/kontango",
+      "icon": "facebook"
+    },
+    {
+      "id": "twitter",
+      "name": "Twitter/X",
+      "url": "https://twitter.com/kontango",
+      "icon": "twitter"
+    },
+    {
+      "id": "discord",
+      "name": "Discord",
+      "url": "https://discord.gg/kontango",
+      "icon": "discord"
+    }
+  ]
+}

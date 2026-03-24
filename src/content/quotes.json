@@ -1,0 +1,48 @@
+{
+  "headlines": {
+    "freedom": [
+      "Break Free From the Subscription Economy",
+      "Own Your Infrastructure. Own Your Future.",
+      "Stop Renting. Start Owning.",
+      "Your Hardware. Your Software. Your Freedom."
+    ],
+    "transformation": [
+      "From Surplus to Success",
+      "Transform What You Have Into What You Need",
+      "Old Hardware. New Possibilities. Zero Lock-in.",
+      "Turn Yesterday's Equipment Into Tomorrow's Advantage"
+    ],
+    "cost": [
+      "Enterprise Infrastructure Without Enterprise Bills",
+      "Cloud-Grade Power. Zero Cloud Costs.",
+      "What If Your Best Investment Was Already In Your Closet?",
+      "The $7M Question: Why Are You Still Paying for Cloud?"
+    ],
+    "empowerment": [
+      "Build Independence, Not Dependencies",
+      "Infrastructure That Works For You, Not Against Your Budget",
+      "100% Open Source. 100% Yours.",
+      "Self-Hosted. Self-Reliant. Self-Made."
+    ]
+  },
+  "taglines": [
+    "Open Source Infrastructure",
+    "Own Your Stack",
+    "Break Free From Lock-in",
+    "100% Open Source"
+  ],
+  "recommended": [
+    {
+      "headline": "Own Your Stack. Free Your Business.",
+      "subtitle": "Transform old hardware into enterprise infrastructure with 100% open source tools."
+    },
+    {
+      "headline": "Break Free From Subscription Lock-in",
+      "subtitle": "Turn surplus equipment into the infrastructure that powers your independence."
+    },
+    {
+      "headline": "From Forgotten Hardware to Thriving Business",
+      "subtitle": "Open source infrastructure that grows with you—no monthly bills, no vendor lock-in."
+    }
+  ]
+}

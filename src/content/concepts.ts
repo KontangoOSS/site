@@ -1,17 +1,22 @@
 // Concepts metadata — maps slugs to titles, descriptions, and profile fit.
-// Markdown content is fetched from KontangoOSS/docs/concepts/<slug>.md
-// (and <slug>-short.md for the quick version, when present).
+// Markdown content is fetched from KontangoOSS/docs/concepts/<slug><variant-suffix>.md
+//
+// Three tiers per concept:
+//   short  → <slug>-short.md  — ~150 words, plain language
+//   medium → <slug>.md         — the standard read
+//   long   → <slug>-long.md    — operator/architecture detail
 
-export type ConceptProfile = 'newcomer' | 'operator' | 'business'
+export type ConceptVariant = 'short' | 'medium' | 'long'
+export type ConceptProfile = 'newcomer' | 'business' | 'operator'
 
 export interface Concept {
   slug: string
   number: string
   title: string
   description: string
-  /** Audiences this concept is most useful for. Used by the profile selector. */
+  /** Audiences this concept is most useful for. */
   profiles: ConceptProfile[]
-  /** Reading time for the full version. */
+  /** Reading time for the medium version. */
   timeEstimate: string
 }
 
@@ -86,21 +91,36 @@ export function getConceptBySlug(slug: string): Concept | undefined {
   return concepts.find(c => c.slug === slug)
 }
 
-export function conceptsForProfile(profile: ConceptProfile): Concept[] {
-  return concepts.filter(c => c.profiles.includes(profile))
-}
-
-export const profileLabels: Record<ConceptProfile, { name: string; tagline: string }> = {
+export const profileLabels: Record<ConceptProfile, { name: string; tagline: string; defaultVariant: ConceptVariant; tierColor: string }> = {
   newcomer: {
     name: 'New here',
-    tagline: "I'm not technical — show me the short version",
+    tagline: "Plain language. Show me the short version.",
+    defaultVariant: 'short',
+    tierColor: '#51cf66', // theme.colors.basic
   },
   business: {
     name: 'Decision maker',
-    tagline: 'I want to understand what this is and what it costs',
+    tagline: 'I want to understand what this is and what it costs.',
+    defaultVariant: 'medium',
+    tierColor: '#ffd43b', // theme.colors.intermediate
   },
   operator: {
     name: 'Running it',
-    tagline: 'I operate the platform — give me the full text',
+    tagline: 'I operate the platform. Give me the full text.',
+    defaultVariant: 'long',
+    tierColor: '#4a9eff', // theme.colors.enterprise
   },
+}
+
+export const variantLabels: Record<ConceptVariant, { label: string; estimate: (base: string) => string }> = {
+  short:  { label: 'Quick',   estimate: () => '~1 min' },
+  medium: { label: 'Standard', estimate: base => base },
+  long:   { label: 'Deep',    estimate: base => `~${parseInt(base) * 2} min` },
+}
+
+/** Returns the markdown URL path suffix for a given variant. */
+export function fileSuffix(variant: ConceptVariant): string {
+  if (variant === 'short') return '-short'
+  if (variant === 'long') return '-long'
+  return ''
 }

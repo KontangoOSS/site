@@ -4,8 +4,17 @@ import { theme } from '../styles/theme'
 import { Container } from '../components/ui/Container'
 import { concepts, ConceptProfile, profileLabels } from '../content/concepts'
 
+const STORAGE_KEY = 'kontango.profile'
+
+function loadInitialProfile(): ConceptProfile | 'all' {
+  if (typeof window === 'undefined') return 'all'
+  const stored = window.localStorage.getItem(STORAGE_KEY)
+  if (stored === 'newcomer' || stored === 'business' || stored === 'operator') return stored
+  return 'all'
+}
+
 export function Concepts() {
-  const [profile, setProfile] = useState<ConceptProfile | 'all'>('all')
+  const [profile, setProfile] = useState<ConceptProfile | 'all'>(loadInitialProfile)
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -15,14 +24,22 @@ export function Concepts() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (profile === 'all') window.localStorage.removeItem(STORAGE_KEY)
+    else window.localStorage.setItem(STORAGE_KEY, profile)
+  }, [profile])
+
   const visible = profile === 'all'
     ? concepts
     : concepts.filter(c => c.profiles.includes(profile))
 
-  // Newcomers default to short. Operators default to full.
+  // Profile choice determines default variant.
   const linkFor = (slug: string) => {
-    if (profile === 'newcomer') return `/concepts/${slug}?v=short`
-    return `/concepts/${slug}`
+    if (profile === 'all') return `/concepts/${slug}`
+    const variant = profileLabels[profile].defaultVariant
+    if (variant === 'medium') return `/concepts/${slug}`
+    return `/concepts/${slug}?v=${variant}`
   }
 
   const heroStyle: CSSProperties = {
@@ -37,13 +54,13 @@ export function Concepts() {
     gap: theme.spacing.md,
     maxWidth: '880px',
     margin: '0 auto',
-    marginBottom: theme.spacing.xxl,
+    marginBottom: theme.spacing.xl,
   }
 
-  const profileCard = (active: boolean): CSSProperties => ({
+  const profileCard = (active: boolean, color: string): CSSProperties => ({
     padding: theme.spacing.lg,
-    background: active ? 'rgba(74, 158, 255, 0.08)' : theme.colors.surface,
-    border: `1px solid ${active ? theme.colors.primary : theme.colors.border}`,
+    background: active ? `${color}14` : theme.colors.surface, // 14 = ~8% alpha hex
+    border: `2px solid ${active ? color : theme.colors.border}`,
     borderRadius: theme.borderRadius.lg,
     cursor: 'pointer',
     textAlign: 'left',
@@ -51,6 +68,7 @@ export function Concepts() {
     color: theme.colors.textPrimary,
     fontFamily: 'inherit',
     width: '100%',
+    position: 'relative',
   })
 
   const conceptGrid: CSSProperties = {
@@ -71,6 +89,8 @@ export function Concepts() {
     transition: 'all 0.15s ease',
   }
 
+  const activeProfileMeta = profile !== 'all' ? profileLabels[profile] : undefined
+
   return (
     <Container size="lg">
       <section style={heroStyle}>
@@ -90,11 +110,11 @@ export function Concepts() {
           margin: '0 auto',
           lineHeight: 1.6,
         }}>
-          Eight short pages that explain Kontango in plain language. Pick the angle that fits — we'll show you the version that makes sense for you.
+          Eight short pages that explain Kontango in plain language. Pick the version that fits — quick, standard, or deep.
         </p>
       </section>
 
-      <section style={{ marginBottom: theme.spacing.xl }}>
+      <section>
         <div style={{
           fontSize: theme.fontSize.sm,
           color: theme.colors.textMuted,
@@ -106,50 +126,78 @@ export function Concepts() {
           Choose your view
         </div>
         <div style={profileGrid}>
-          {(['newcomer', 'business', 'operator'] as ConceptProfile[]).map(p => (
-            <button
-              key={p}
-              style={profileCard(profile === p)}
-              onClick={() => setProfile(profile === p ? 'all' : p)}
-            >
-              <div style={{
-                fontSize: theme.fontSize.base,
-                fontWeight: theme.fontWeight.bold,
-                color: profile === p ? theme.colors.primary : theme.colors.textPrimary,
-                marginBottom: theme.spacing.xs,
-              }}>
-                {profileLabels[p].name}
-              </div>
-              <div style={{
-                fontSize: theme.fontSize.sm,
-                color: theme.colors.textSecondary,
-                lineHeight: 1.5,
-              }}>
-                {profileLabels[p].tagline}
-              </div>
-            </button>
-          ))}
+          {(['newcomer', 'business', 'operator'] as ConceptProfile[]).map(p => {
+            const meta = profileLabels[p]
+            const active = profile === p
+            return (
+              <button
+                key={p}
+                style={profileCard(active, meta.tierColor)}
+                onClick={() => setProfile(active ? 'all' : p)}
+                aria-pressed={active}
+              >
+                <div style={{
+                  display: 'inline-block',
+                  padding: `2px ${theme.spacing.sm}`,
+                  background: meta.tierColor,
+                  color: '#0a0a0f',
+                  fontSize: theme.fontSize.xs,
+                  fontWeight: theme.fontWeight.bold,
+                  borderRadius: theme.borderRadius.full,
+                  marginBottom: theme.spacing.sm,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}>
+                  {meta.defaultVariant === 'short' ? 'Quick' : meta.defaultVariant === 'medium' ? 'Standard' : 'Deep'}
+                </div>
+                <div style={{
+                  fontSize: theme.fontSize.lg,
+                  fontWeight: theme.fontWeight.bold,
+                  color: active ? meta.tierColor : theme.colors.textPrimary,
+                  marginBottom: theme.spacing.xs,
+                }}>
+                  {meta.name}
+                </div>
+                <div style={{
+                  fontSize: theme.fontSize.sm,
+                  color: theme.colors.textSecondary,
+                  lineHeight: 1.5,
+                }}>
+                  {meta.tagline}
+                </div>
+              </button>
+            )
+          })}
         </div>
-        {profile !== 'all' && (
-          <div style={{ textAlign: 'center', fontSize: theme.fontSize.sm, color: theme.colors.textMuted }}>
-            Showing concepts most useful for: <strong style={{ color: theme.colors.textSecondary }}>{profileLabels[profile].name}</strong>
-            {' · '}
-            <button
-              style={{
-                background: 'none',
-                border: 'none',
-                color: theme.colors.primary,
-                cursor: 'pointer',
-                fontSize: 'inherit',
-                padding: 0,
-                fontFamily: 'inherit',
-              }}
-              onClick={() => setProfile('all')}
-            >
-              Show all
-            </button>
-          </div>
-        )}
+        <div style={{
+          textAlign: 'center',
+          fontSize: theme.fontSize.sm,
+          color: theme.colors.textMuted,
+          marginBottom: theme.spacing.xl,
+        }}>
+          {activeProfileMeta ? (
+            <>
+              Cards link to the <strong style={{ color: activeProfileMeta.tierColor }}>{activeProfileMeta.defaultVariant === 'short' ? 'Quick' : activeProfileMeta.defaultVariant === 'medium' ? 'Standard' : 'Deep'}</strong> version.
+              {' '}
+              <button
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: theme.colors.primary,
+                  cursor: 'pointer',
+                  fontSize: 'inherit',
+                  padding: 0,
+                  fontFamily: 'inherit',
+                }}
+                onClick={() => setProfile('all')}
+              >
+                Show all concepts
+              </button>
+            </>
+          ) : (
+            <>You can change versions on any page.</>
+          )}
+        </div>
       </section>
 
       <section style={conceptGrid}>
@@ -181,7 +229,9 @@ export function Concepts() {
               {c.description}
             </p>
             <div style={{ fontSize: theme.fontSize.xs, color: theme.colors.textMuted }}>
-              {profile === 'newcomer' ? 'Quick version · ~1 min' : `⏱️ ${c.timeEstimate}`}
+              {profile === 'newcomer' ? 'Quick · ~1 min' :
+               profile === 'operator' ? `Deep · ~${parseInt(c.timeEstimate) * 2} min` :
+               `⏱️ ${c.timeEstimate}`}
             </div>
           </Link>
         ))}

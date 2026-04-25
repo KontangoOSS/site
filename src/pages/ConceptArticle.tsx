@@ -4,23 +4,37 @@ import { theme } from '../styles/theme'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
 import { MarkdownContent } from '../components/ui/MarkdownContent'
-import { concepts, getConceptBySlug } from '../content/concepts'
+import {
+  concepts,
+  getConceptBySlug,
+  ConceptVariant,
+  variantLabels,
+  fileSuffix,
+} from '../content/concepts'
 
 const DOCS_BASE = 'https://raw.githubusercontent.com/KontangoOSS/docs/main/concepts'
 
-type Variant = 'short' | 'full'
+const variantOrder: ConceptVariant[] = ['short', 'medium', 'long']
+
+function parseVariant(v: string | null): ConceptVariant {
+  if (v === 'short' || v === 'long') return v
+  return 'medium'
+}
+
+const tierColor: Record<ConceptVariant, string> = {
+  short: theme.colors.basic,
+  medium: theme.colors.intermediate,
+  long: theme.colors.enterprise,
+}
 
 export function ConceptArticle() {
   const { slug } = useParams<{ slug: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
   const [content, setContent] = useState<string>('')
   const [loading, setLoading] = useState(true)
-  const [shortAvailable, setShortAvailable] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const concept = slug ? getConceptBySlug(slug) : undefined
-
-  // Variant comes from ?v=short — defaults to full.
-  const variant: Variant = searchParams.get('v') === 'short' ? 'short' : 'full'
+  const variant = parseVariant(searchParams.get('v'))
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768)
@@ -34,41 +48,36 @@ export function ConceptArticle() {
     setLoading(true)
 
     async function loadContent() {
-      const fileName = variant === 'short' ? `${slug}-short` : slug
-      const fallback = `${slug}` // if -short doesn't exist, fall through to long
-
+      const path = `${slug}${fileSuffix(variant)}.md`
       try {
-        const res = await fetch(`${DOCS_BASE}/${fileName}.md`)
+        const res = await fetch(`${DOCS_BASE}/${path}`)
         if (res.ok) {
           setContent(await res.text())
-          if (variant === 'full') {
-            // Also probe whether a -short.md exists, so we can show the toggle
-            const probe = await fetch(`${DOCS_BASE}/${slug}-short.md`, { method: 'HEAD' })
-            setShortAvailable(probe.ok)
+        } else if (variant !== 'medium') {
+          // Fall back to medium if a tier doesn't exist yet
+          const fallback = await fetch(`${DOCS_BASE}/${slug}.md`)
+          if (fallback.ok) {
+            setContent(await fallback.text())
           } else {
-            setShortAvailable(true)
+            setContent(`# ${concept?.title ?? 'Concept'}\n\nContent coming soon.`)
           }
-        } else if (variant === 'short') {
-          // No short version yet — fall back to full and tell the toggle
-          const fullRes = await fetch(`${DOCS_BASE}/${fallback}.md`)
-          if (fullRes.ok) {
-            setContent(await fullRes.text())
-          } else {
-            setContent(`# ${concept?.title ?? 'Concept'}\n\nContent coming soon. View on [GitHub](https://github.com/KontangoOSS/docs/tree/main/concepts).`)
-          }
-          setShortAvailable(false)
         } else {
-          setContent(`# ${concept?.title ?? 'Concept'}\n\nContent coming soon. View on [GitHub](https://github.com/KontangoOSS/docs/tree/main/concepts).`)
+          setContent(`# ${concept?.title ?? 'Concept'}\n\nContent coming soon.`)
         }
       } catch {
-        setContent(`# ${concept?.title ?? 'Concept'}\n\nCouldn't load this page. Try refreshing or view it on [GitHub](https://github.com/KontangoOSS/docs/tree/main/concepts).`)
+        setContent(`# ${concept?.title ?? 'Concept'}\n\nCouldn't load this page. Try refreshing.`)
       }
-
       setLoading(false)
     }
 
     loadContent()
+    window.scrollTo({ top: 0, behavior: 'instant' })
   }, [slug, variant, concept?.title])
+
+  const setVariant = (v: ConceptVariant) => {
+    if (v === 'medium') setSearchParams({})
+    else setSearchParams({ v })
+  }
 
   const currentIndex = concepts.findIndex(c => c.slug === slug)
   const prev = currentIndex > 0 ? concepts[currentIndex - 1] : undefined
@@ -98,16 +107,18 @@ export function ConceptArticle() {
     textDecoration: 'none',
   }
 
-  const toggleStyle = (active: boolean): CSSProperties => ({
+  // Tier toggle — three pill buttons with the tier color when active
+  const pillStyle = (v: ConceptVariant, active: boolean): CSSProperties => ({
     padding: `${theme.spacing.xs} ${theme.spacing.md}`,
-    background: active ? theme.colors.primary : 'transparent',
+    background: active ? tierColor[v] : 'transparent',
     color: active ? '#0a0a0f' : theme.colors.textSecondary,
-    border: `1px solid ${active ? theme.colors.primary : theme.colors.border}`,
+    border: `1px solid ${active ? tierColor[v] : theme.colors.border}`,
     borderRadius: theme.borderRadius.full,
     cursor: 'pointer',
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.medium,
     transition: 'all 0.15s ease',
+    fontFamily: 'inherit',
   })
 
   if (!concept) {
@@ -158,24 +169,28 @@ export function ConceptArticle() {
           gap: theme.spacing.md,
           flexWrap: 'wrap',
         }}>
-          {shortAvailable && (
-            <div style={{ display: 'flex', gap: theme.spacing.xs }}>
+          <div style={{
+            display: 'flex',
+            gap: theme.spacing.xs,
+            padding: theme.spacing.xs,
+            background: theme.colors.surface,
+            borderRadius: theme.borderRadius.full,
+            border: `1px solid ${theme.colors.border}`,
+          }}>
+            {variantOrder.map(v => (
               <button
-                style={toggleStyle(variant === 'short')}
-                onClick={() => setSearchParams({ v: 'short' })}
+                key={v}
+                style={pillStyle(v, variant === v)}
+                onClick={() => setVariant(v)}
+                aria-pressed={variant === v}
+                aria-label={`Switch to ${variantLabels[v].label} version`}
               >
-                Quick version
+                {variantLabels[v].label}
               </button>
-              <button
-                style={toggleStyle(variant === 'full')}
-                onClick={() => setSearchParams({})}
-              >
-                Full version
-              </button>
-            </div>
-          )}
+            ))}
+          </div>
           <div style={{ fontSize: theme.fontSize.sm, color: theme.colors.textMuted }}>
-            ⏱️ {variant === 'short' ? '~1 min' : concept.timeEstimate}
+            ⏱️ {variantLabels[variant].estimate(concept.timeEstimate)}
           </div>
         </div>
       </header>
@@ -190,7 +205,10 @@ export function ConceptArticle() {
 
       <nav style={navStyle}>
         {prev ? (
-          <Link to={`/concepts/${prev.slug}`} style={navCardStyle}>
+          <Link
+            to={`/concepts/${prev.slug}${variant !== 'medium' ? `?v=${variant}` : ''}`}
+            style={navCardStyle}
+          >
             <div style={{ fontSize: theme.fontSize.xs, color: theme.colors.textMuted, marginBottom: theme.spacing.xs }}>← Previous</div>
             <div style={{ fontSize: theme.fontSize.base, color: theme.colors.textPrimary, fontWeight: theme.fontWeight.medium }}>
               {prev.number}. {prev.title}
@@ -198,7 +216,10 @@ export function ConceptArticle() {
           </Link>
         ) : <div />}
         {next ? (
-          <Link to={`/concepts/${next.slug}`} style={{ ...navCardStyle, textAlign: 'right' }}>
+          <Link
+            to={`/concepts/${next.slug}${variant !== 'medium' ? `?v=${variant}` : ''}`}
+            style={{ ...navCardStyle, textAlign: 'right' }}
+          >
             <div style={{ fontSize: theme.fontSize.xs, color: theme.colors.textMuted, marginBottom: theme.spacing.xs }}>Next →</div>
             <div style={{ fontSize: theme.fontSize.base, color: theme.colors.textPrimary, fontWeight: theme.fontWeight.medium }}>
               {next.number}. {next.title}

@@ -57,6 +57,7 @@ export function Navbar() {
 
   const navLinks = [
     { path: '/', label: 'Home' },
+    { path: '/concepts', label: 'Concepts' },
     { path: '/guide', label: 'Guide' },
     { path: '/hardware', label: 'Hardware' },
     { path: '/about', label: 'About' },
